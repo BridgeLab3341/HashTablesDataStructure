@@ -1,109 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Services.Client;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace HashTablesDataStructure
 {
-    public class HashTables
+    public class HashTable<TKey, TValue>
     {
-        public void FindFrequency()
+        private readonly LinkedList<MyMapNode<TKey, TValue>>[] buckets;
+        private const int DefaultCapacity = 10;
+        public HashTable()
         {
-            string Sentence = "To be or not to be";
-            Dictionary<string, int> frequency = GetWordFrequency(Sentence);
-            Console.WriteLine("");
+            buckets=new LinkedList<MyMapNode<TKey, TValue>>[DefaultCapacity];
         }
-        public static Dictionary<string,int> GetWordFrequency(string sentence)
+        private int GetBucketIndex(TKey key)
         {
-            Dictionary<string,int>wordFrequency = new Dictionary<string,int>();
-            string[] words = sentence.Split(" ");
-            foreach (string word in words)
-            {
-                if(wordFrequency.ContainsKey(word))
-                {
-                    wordFrequency[word]++;
-                }
-                else
-                {
-                    wordFrequency[word] = 1;
-                }
-            }
-            return wordFrequency;
+            int hashCode = key.GetHashCode();
+            int index = hashCode % buckets.Length;
+            return index;
         }
-        public class HashMapNode<K, V>
+        public TValue Get(TKey key)
         {
-            private int size;
-            private LinkedList<KeyValue<K, V>>[] items;
-            public HashMapNode(int size)
+            int index = GetBucketIndex(key);
+            LinkedList<MyMapNode<TKey, TValue>> bucket = buckets[index];
+            if (bucket != null)
             {
-                this.size = size;
-                items = new LinkedList<KeyValuePair<K, V>>[size];
-            }
-            public int GetArrayPosition(K key)
-            {
-                int position = key.GetHashCode() % size;
-                return Math.Abs(position);
-            }
-            public void Add(K key, V value)
-            {
-                int position = GetArrayPosition(key);
-                LinkedList<KeyValuePair<K, V>> linkedlist = GetLinkedList(position);
-                KeyValuePair<K, V> item = new KeyValue<K, V>() { Key = key, Value = value };
-                linkedlist.AddLast(item);
-            }
-            public LinkedList<KeyValue<K, V>> GetLinkedList(int position)
-            {
-                LinkedList<KeyValue<K, V>> linkedlist = items[position];
-                if (linkedlist == null)
+                foreach (var node in bucket)
                 {
-                    linkedlist = new LinkedList<KeyValue<K, V>>();
-                    items[position] = linkedlist;
-                }
-                return linkedlist;
-            }
-            public V Get(K key)
-            {
-                int position = GetArrayPosition(key);
-                LinkedList<KeyValue<K, V>> linkedlis = GetLinkedList(position);
-                foreach (KeyValue<K, V> item in linkedlis)
-                {
-                    if (item.Key.Equals(key))
+                    if (node.Key.Equals(key))
                     {
-                        return item.Value;
+                        return node.Value;
                     }
                 }
-                return default(V);
             }
-            public void Remove(K key)
+            return default(TValue);
+        }
+        public void Add(TKey key, TValue value)
+        {
+            int index = GetBucketIndex(key);
+
+            if (buckets[index] == null)
             {
-                int position = GetArrayPosition(key);
-                LinkedList<KeyValue<K, V>> LinkedList = GetLinkedList(position);
-                bool itemFound = false;
-                KeyValue<K, V> founditem = default(KeyValue<K, V>);
-                foreach (KeyValue<K, V> item in LinkedList)
+                buckets[index] = new LinkedList<MyMapNode<TKey, TValue>>();
+            }
+
+            LinkedList<MyMapNode<TKey, TValue>> bucket = buckets[index];
+            foreach (var node in bucket)
+            {
+                if (node.Key.Equals(key))
                 {
-                    if (item.Key.Equals(key))
+                    node.Value = value;
+                    return;
+                }
+            }
+            bucket.AddLast(new MyMapNode<TKey, TValue>(key, value));
+        }
+        public void Remove(TKey key)
+        {
+            int index = GetBucketIndex(key);
+
+            LinkedList<MyMapNode<TKey, TValue>> bucket = buckets[index];
+            if (bucket != null)
+            {
+                LinkedListNode<MyMapNode<TKey, TValue>> currentNode = bucket.First;
+                while (currentNode != null)
+                {
+                    if (currentNode.Value.Key.Equals(key))
                     {
-                        itemFound = true;
-                        founditem = item;
+                        bucket.Remove(currentNode);
+                        return;
                     }
-                }
-                if (itemFound)
-                {
-                    LinkedList.Remove(founditem);
-                }
-            }
-            public void Display()
-            {
-                foreach (var linkedList in items)
-                {
-                    if (linkedList != null)
-                        foreach (KeyValue<K, V> keyvalue in linkedList)
-                        {
-                            Console.WriteLine(keyvalue.Key + " " + keyvalue.Value);
-                        }
+                    currentNode = currentNode.Next;
                 }
             }
         }
+    }
 }
+            
